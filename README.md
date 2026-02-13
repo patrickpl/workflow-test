@@ -47,7 +47,25 @@ Add the following secrets to your GitHub repository (Settings → Secrets and va
 - **`SIGNAL_RECIPIENTS`**: Comma-separated list of recipient phone numbers
   - Example: `+1234567890,+0987654321`
 
-### 4. Enable Security Alerts (Optional)
+### 4. Enable CI/CD Health Monitoring (Optional)
+
+To receive notifications for workflow status:
+
+1. Edit `.github/workflows/signal-notifications.yml`
+2. Uncomment the `workflow_run` section (lines 12-15)
+3. Replace the example workflow names with your actual workflow names
+4. Commit and push the changes
+
+Example:
+```yaml
+workflow_run:
+  workflows: ["CI", "Tests", "Deploy"]  # Your workflow names
+  types: [completed]
+```
+
+Note: The `workflow_run` trigger only works on the default branch (main/master).
+
+### 5. Enable Security Alerts (Optional)
 
 To receive notifications for security issues:
 

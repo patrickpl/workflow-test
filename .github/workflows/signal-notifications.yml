@@ -9,9 +9,12 @@ on:
     types: [created, reopened, fixed]
   secret_scanning_alert:
     types: [created, resolved, reopened]
-  workflow_run:
-    workflows: ["*"]
-    types: [completed]
+  # Uncomment and customize the workflow_run trigger below to monitor specific workflows
+  # Note: workflow_run only works on the default branch (main/master)
+  # Replace the workflow names with your actual workflow names
+  # workflow_run:
+  #   workflows: ["CI", "Tests", "Deploy"]  # List your workflow names here
+  #   types: [completed]
 
 jobs:
   signal-notify:
