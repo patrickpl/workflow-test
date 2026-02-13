@@ -10,39 +10,28 @@ jobs:
   signal-notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Check IPv6 connectivity
-        run: ping6 -c 3 google.com || echo "Kein IPv6 verfügbar"
       - name: Prepare Notification Data
         id: prep
         shell: bash
         run: |
-          # Wir nutzen einen Delimiter (EOF), um mehrzeiligen Text sicher zu speichern
           if [ "${{ github.event_name }}" == "push" ]; then
             echo "msg<<EOF" >> $GITHUB_OUTPUT
-            echo "🚀 PROGRESS!" >> $GITHUB_OUTPUT
+            echo "🚀 New Commit!" >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
-            echo "Frischer Code ist gelandet. Jemand war fleißig!" >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
-            echo "👤 Wer: ${{ github.actor }}" >> $GITHUB_OUTPUT
-            echo "📝 Was: ${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
+            echo "👤 Who: ${{ github.actor }}" >> $GITHUB_OUTPUT
+            echo "📝 What: ${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
             echo "🔗 Link: ${{ github.event.head_commit.url }}" >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
-            echo "Weiter so! 💪" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
-            echo "avatar=${{ github.event.sender.avatar_url }}" >> $GITHUB_OUTPUT
-          else
+          elsif [ "${{ github.event_name }}" == "issues" ]; then
             echo "msg<<EOF" >> $GITHUB_OUTPUT
             echo "👋 INPUT NEEDED!" >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
-            echo "Ein neues Issue wartet auf uns. Lasst uns das gemeinsam lösen! 💡" >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
             echo "📌 Titel: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
             echo "👤 Von: ${{ github.event.issue.user.login }}" >> $GITHUB_OUTPUT
             echo "🔗 Link: ${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
-            echo "Packen wir's an! ✨" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
-            echo "avatar=${{ github.event.issue.user.avatar_url }}" >> $GITHUB_OUTPUT
+          else
+            echo ${{github.event_name}}
           fi
 
       - name: Download Avatar and Convert to Base64
