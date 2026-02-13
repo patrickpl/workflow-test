@@ -12,12 +12,34 @@ jobs:
     steps:
       - name: Prepare Notification Data
         id: prep
+        shell: bash
         run: |
+          # Wir nutzen einen Delimiter (EOF), um mehrzeiligen Text sicher zu speichern
           if [ "${{ github.event_name }}" == "push" ]; then
-            echo "msg=🚀 PROGRESS!%0A%0AFrischer Code ist gelandet. Jemand war fleißig!%0A%0A👤 Wer: ${{ github.actor }}%0A📝 Was: ${{ github.event.head_commit.message }}%0A🔗 Link: ${{ github.event.head_commit.url }}%0A%0AWeiter so! 💪" >> $GITHUB_OUTPUT
+            echo "msg<<EOF" >> $GITHUB_OUTPUT
+            echo "🚀 PROGRESS!" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "Frischer Code ist gelandet. Jemand war fleißig!" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "👤 Wer: ${{ github.actor }}" >> $GITHUB_OUTPUT
+            echo "📝 Was: ${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
+            echo "🔗 Link: ${{ github.event.head_commit.url }}" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "Weiter so! 💪" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
             echo "avatar=${{ github.event.sender.avatar_url }}" >> $GITHUB_OUTPUT
           else
-            echo "msg=👋 INPUT NEEDED!%0A%0AEin neues Issue wartet auf uns. Lasst uns das gemeinsam lösen! 💡%0A%0A📌 Titel: ${{ github.event.issue.title }}%0A👤 Von: ${{ github.event.issue.user.login }}%0A🔗 Link: ${{ github.event.issue.html_url }}%0A%0APacken wir's an! ✨" >> $GITHUB_OUTPUT
+            echo "msg<<EOF" >> $GITHUB_OUTPUT
+            echo "👋 INPUT NEEDED!" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "Ein neues Issue wartet auf uns. Lasst uns das gemeinsam lösen! 💡" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "📌 Titel: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+            echo "👤 Von: ${{ github.event.issue.user.login }}" >> $GITHUB_OUTPUT
+            echo "🔗 Link: ${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "Packen wir's an! ✨" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
             echo "avatar=${{ github.event.issue.user.avatar_url }}" >> $GITHUB_OUTPUT
           fi
 
@@ -27,16 +49,25 @@ jobs:
           echo "AVATAR_B64=$(base64 -w 0 avatar.png)" >> $GITHUB_ENV
 
       - name: Send to Signal
+        env:
+          # Wir laden die Nachricht in eine Umgebungsvariable, um JSON-escaping Probleme zu vermeiden
+          FINAL_MSG: ${{ steps.prep.outputs.msg }}
         run: |
-          # Wir nutzen printf, um die URL-kodierten Zeilenumbrüche (%0A) korrekt zu interpretieren
-          MESSAGE=$(printf "${{ steps.prep.outputs.msg }}")
-          
+          # jq ist auf GitHub-Runnern vorinstalliert und hilft uns, 
+          # ein valides JSON zu bauen, selbst wenn der Commit-Text Anführungszeichen enthält.
+          JSON_BODY=$(jq -n \
+            --arg msg "$FINAL_MSG" \
+            --arg num "${{ secrets.SIGNAL_SENDER_NUMBER }}" \
+            --arg rec "${{ secrets.SIGNAL_GROUP_ID }}" \
+            --arg img "${{ env.AVATAR_B64 }}" \
+            '{
+              message: $msg,
+              number: $num,
+              recipients: [$rec],
+              base64_attachments: [$img],
+              text_mode: "styled"
+            }')
+
           curl -6 -X POST "${{ secrets.SIGNAL_API_URL }}/v1/send" \
           -H "Content-Type: application/json" \
-          -d "{
-              \"message\": \"$MESSAGE\",
-              \"number\": \"${{ secrets.SIGNAL_SENDER_NUMBER }}\",
-              \"recipients\": [\"${{ secrets.SIGNAL_GROUP_ID }}\"],
-              \"base64_attachments\": [\"${{ env.AVATAR_B64 }}\"],
-              \"text_mode\": \"styled\"
-          }"
+          -d "$JSON_BODY"
