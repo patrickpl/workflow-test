@@ -22,7 +22,7 @@ jobs:
             echo "📝 What: ${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
             echo "🔗 Link: ${{ github.event.head_commit.url }}" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
-          elsif [ "${{ github.event_name }}" = "issues" ]; then
+          elif [ "${{ github.event_name }}" = "issues" ]; then
             echo "msg<<EOF" >> $GITHUB_OUTPUT
             echo "👋 INPUT NEEDED!" >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
