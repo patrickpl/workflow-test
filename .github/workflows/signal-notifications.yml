@@ -1,0 +1,42 @@
+name: Signal Team Notifications
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  issues:
+    types: [opened]
+
+jobs:
+  signal-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare Notification Data
+        id: prep
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "msg=🚀 PROGRESS!%0A%0AFrischer Code ist gelandet. Jemand war fleißig!%0A%0A👤 Wer: ${{ github.actor }}%0A📝 Was: ${{ github.event.head_commit.message }}%0A🔗 Link: ${{ github.event.head_commit.url }}%0A%0AWeiter so! 💪" >> $GITHUB_OUTPUT
+            echo "avatar=${{ github.event.sender.avatar_url }}" >> $GITHUB_OUTPUT
+          else
+            echo "msg=👋 INPUT NEEDED!%0A%0AEin neues Issue wartet auf uns. Lasst uns das gemeinsam lösen! 💡%0A%0A📌 Titel: ${{ github.event.issue.title }}%0A👤 Von: ${{ github.event.issue.user.login }}%0A🔗 Link: ${{ github.event.issue.html_url }}%0A%0APacken wir's an! ✨" >> $GITHUB_OUTPUT
+            echo "avatar=${{ github.event.issue.user.avatar_url }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download Avatar and Convert to Base64
+        run: |
+          curl -L -o avatar.png "${{ steps.prep.outputs.avatar }}"
+          echo "AVATAR_B64=$(base64 -w 0 avatar.png)" >> $GITHUB_ENV
+
+      - name: Send to Signal
+        run: |
+          # Wir nutzen printf, um die URL-kodierten Zeilenumbrüche (%0A) korrekt zu interpretieren
+          MESSAGE=$(printf "${{ steps.prep.outputs.msg }}")
+          
+          curl -X POST "${{ secrets.SIGNAL_API_URL }}/v1/send" \
+          -H "Content-Type: application/json" \
+          -d "{
+              \"message\": \"$MESSAGE\",
+              \"number\": \"${{ secrets.SIGNAL_SENDER_NUMBER }}\",
+              \"recipients\": [\"${{ secrets.SIGNAL_GROUP_ID }}\"],
+              \"base64_attachments\": [\"${{ env.AVATAR_B64 }}\"],
+              \"text_mode\": \"styled\"
+          }"
