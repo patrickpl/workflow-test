@@ -14,23 +14,31 @@ jobs:
         id: prep
         shell: bash
         run: |
+          REPO_URL="https://github.com/${{ github.repository }}"
+
           if [ "${{ github.event_name }}" = "push" ]; then
+            COMMIT_SHA="${{ github.sha }}"
+            SHORT_SHA="$(echo "$COMMIT_SHA" | cut -c1-7)"
+            COMMIT_URL="$REPO_URL/commit/$COMMIT_SHA"
+
             echo "msg<<EOF" >> $GITHUB_OUTPUT
             echo "🚀 New Commit!" >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
             echo "👤 Who: ${{ github.actor }}" >> $GITHUB_OUTPUT
             echo "📝 What: ${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
-            echo "🔗 Link: ${{ github.event.head_commit.url }}" >> $GITHUB_OUTPUT
+            echo "🔗 Link: $COMMIT_URL ($SHORT_SHA)" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
+
           elif [ "${{ github.event_name }}" = "issues" ]; then
-            # Different notifications based on issue action
+            ISSUE_URL="$REPO_URL/issues/${{ github.event.issue.number }}"
+
             if [ "${{ github.event.action }}" = "opened" ]; then
               echo "msg<<EOF" >> $GITHUB_OUTPUT
               echo "🆕 New Issue!" >> $GITHUB_OUTPUT
               echo "" >> $GITHUB_OUTPUT
               echo "📌 Title: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
               echo "👤 Von: ${{ github.event.issue.user.login }}" >> $GITHUB_OUTPUT
-              echo "🔗 Link: ${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ISSUE_URL" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
             elif [ "${{ github.event.action }}" = "closed" ]; then
               echo "msg<<EOF" >> $GITHUB_OUTPUT
@@ -38,43 +46,18 @@ jobs:
               echo "" >> $GITHUB_OUTPUT
               echo "📌 Title: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
               echo "👤 Solved by: ${{ github.event.sender.login }}" >> $GITHUB_OUTPUT
-              echo "🔗 Link: ${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ISSUE_URL" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
             else
-              # For edited, labeled, assigned, milestoned, etc.
               echo "msg<<EOF" >> $GITHUB_OUTPUT
               echo "🔄 Issue Updated!" >> $GITHUB_OUTPUT
               echo "" >> $GITHUB_OUTPUT
               echo "📌 Title: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
               echo "🔧 Action: ${{ github.event.action }}" >> $GITHUB_OUTPUT
               echo "👤 Updated by: ${{ github.event.sender.login }}" >> $GITHUB_OUTPUT
-              echo "🔗 Link: ${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ISSUE_URL" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
             fi
           else
             echo "${{ github.event_name }}"
           fi
-
-      - name: Send to Signal
-        env:
-          # Wir laden die Nachricht in eine Umgebungsvariable, um JSON-escaping Probleme zu vermeiden
-          FINAL_MSG: ${{ steps.prep.outputs.msg }}
-        run: |
-          # jq ist auf GitHub-Runnern vorinstalliert und hilft uns, 
-          # ein valides JSON zu bauen, selbst wenn der Commit-Text Anführungszeichen enthält.
-          JSON_BODY=$(jq -n \
-            --arg msg "$FINAL_MSG" \
-            --arg num "${{ secrets.SIGNAL_SENDER_NUMBER }}" \
-            --arg rec "${{ secrets.SIGNAL_GROUP_ID }}" \
-            --arg img "${{ env.AVATAR_B64 }}" \
-            '{
-              message: $msg,
-              number: $num,
-              recipients: [$rec],
-              base64_attachments: [$img],
-              text_mode: "styled"
-            }')
-
-          curl -X POST "${{ secrets.SIGNAL_API_URL }}/v1/send" \
-          -H "Content-Type: application/json" \
-          -d "$JSON_BODY"
