@@ -159,6 +159,6 @@ jobs:
             fi
 
           else
-            echo "msg=Event type not supported: ${{ github.event_name }}" >> $GITHUB_OUTPUT
+            echo "Unsupported event type: ${{ github.event_name }}"
           fi
 
