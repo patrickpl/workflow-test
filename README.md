@@ -59,7 +59,6 @@ To receive notifications for security issues:
 🔐 Security Alert: Secret Detected!
 
 🔑 Secret Type: GitHub Personal Access Token
-📁 Location: config/secrets.yml
 🔗 Link: https://github.com/...
 ⚠️ Action Required: Review and revoke the exposed secret immediately!
 ```

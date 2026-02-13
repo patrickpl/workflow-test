@@ -105,8 +105,7 @@ jobs:
               echo "msg<<EOF" >> $GITHUB_OUTPUT
               echo "🔐 Security Alert: Secret Detected!" >> $GITHUB_OUTPUT
               echo "" >> $GITHUB_OUTPUT
-              echo "🔑 Secret Type: ${{ github.event.alert.secret_type }}" >> $GITHUB_OUTPUT
-              echo "📁 Location: ${{ github.event.alert.secret }}" >> $GITHUB_OUTPUT
+              echo "🔑 Secret Type: ${{ github.event.alert.secret_type_display_name }}" >> $GITHUB_OUTPUT
               echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
               echo "⚠️ Action Required: Review and revoke the exposed secret immediately!" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
@@ -114,7 +113,7 @@ jobs:
               echo "msg<<EOF" >> $GITHUB_OUTPUT
               echo "✅ Secret Alert Resolved!" >> $GITHUB_OUTPUT
               echo "" >> $GITHUB_OUTPUT
-              echo "🔑 Secret Type: ${{ github.event.alert.secret_type }}" >> $GITHUB_OUTPUT
+              echo "🔑 Secret Type: ${{ github.event.alert.secret_type_display_name }}" >> $GITHUB_OUTPUT
               echo "👤 Resolved by: ${{ github.event.sender.login }}" >> $GITHUB_OUTPUT
               echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
@@ -122,7 +121,7 @@ jobs:
               echo "msg<<EOF" >> $GITHUB_OUTPUT
               echo "🔄 Secret Alert Reopened!" >> $GITHUB_OUTPUT
               echo "" >> $GITHUB_OUTPUT
-              echo "🔑 Secret Type: ${{ github.event.alert.secret_type }}" >> $GITHUB_OUTPUT
+              echo "🔑 Secret Type: ${{ github.event.alert.secret_type_display_name }}" >> $GITHUB_OUTPUT
               echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
             fi
