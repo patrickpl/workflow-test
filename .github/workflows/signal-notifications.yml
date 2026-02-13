@@ -26,28 +26,28 @@ jobs:
             # Different notifications based on issue action
             if [ "${{ github.event.action }}" = "opened" ]; then
               echo "msg<<EOF" >> $GITHUB_OUTPUT
-              echo "🆕 NEW ISSUE!" >> $GITHUB_OUTPUT
+              echo "🆕 New Issue!" >> $GITHUB_OUTPUT
               echo "" >> $GITHUB_OUTPUT
-              echo "📌 Titel: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+              echo "📌 Title: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
               echo "👤 Von: ${{ github.event.issue.user.login }}" >> $GITHUB_OUTPUT
               echo "🔗 Link: ${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
             elif [ "${{ github.event.action }}" = "closed" ]; then
               echo "msg<<EOF" >> $GITHUB_OUTPUT
-              echo "✅ ISSUE SOLVED!" >> $GITHUB_OUTPUT
+              echo "✅ Issue Solved!" >> $GITHUB_OUTPUT
               echo "" >> $GITHUB_OUTPUT
-              echo "📌 Titel: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
-              echo "👤 Geschlossen von: ${{ github.event.sender.login }}" >> $GITHUB_OUTPUT
+              echo "📌 Title: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+              echo "👤 Solved by: ${{ github.event.sender.login }}" >> $GITHUB_OUTPUT
               echo "🔗 Link: ${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
             else
               # For edited, labeled, assigned, milestoned, etc.
               echo "msg<<EOF" >> $GITHUB_OUTPUT
-              echo "🔄 ISSUE UPDATED!" >> $GITHUB_OUTPUT
+              echo "🔄 Issue Updated!" >> $GITHUB_OUTPUT
               echo "" >> $GITHUB_OUTPUT
-              echo "📌 Titel: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
-              echo "🔧 Aktion: ${{ github.event.action }}" >> $GITHUB_OUTPUT
-              echo "👤 Von: ${{ github.event.sender.login }}" >> $GITHUB_OUTPUT
+              echo "📌 Title: ${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+              echo "🔧 Action: ${{ github.event.action }}" >> $GITHUB_OUTPUT
+              echo "👤 Updated by: ${{ github.event.sender.login }}" >> $GITHUB_OUTPUT
               echo "🔗 Link: ${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
             fi
