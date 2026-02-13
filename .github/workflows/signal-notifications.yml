@@ -5,6 +5,13 @@ on:
     branches: [ "main", "master" ]
   issues:
     types: [opened, edited, labeled, unlabeled, assigned, unassigned, milestoned, demilestoned, closed, reopened]
+  code_scanning_alert:
+    types: [created, reopened, fixed]
+  secret_scanning_alert:
+    types: [created, resolved, reopened]
+  workflow_run:
+    workflows: ["*"]
+    types: [completed]
 
 jobs:
   signal-notify:
@@ -58,6 +65,147 @@ jobs:
               echo "🔗 Link: $ISSUE_URL" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
             fi
+
+          elif [ "${{ github.event_name }}" = "code_scanning_alert" ]; then
+            ALERT_URL="$REPO_URL/security/code-scanning/${{ github.event.alert.number }}"
+
+            if [ "${{ github.event.action }}" = "created" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "🚨 Security Alert: Code Scanning!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "⚠️ Severity: ${{ github.event.alert.rule.severity }}" >> $GITHUB_OUTPUT
+              echo "📝 Rule: ${{ github.event.alert.rule.description }}" >> $GITHUB_OUTPUT
+              echo "📁 File: ${{ github.event.alert.most_recent_instance.location.path }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "${{ github.event.action }}" = "reopened" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "🔄 Security Alert Reopened!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "⚠️ Severity: ${{ github.event.alert.rule.severity }}" >> $GITHUB_OUTPUT
+              echo "📝 Rule: ${{ github.event.alert.rule.description }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "${{ github.event.action }}" = "fixed" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "✅ Security Alert Fixed!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "📝 Rule: ${{ github.event.alert.rule.description }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+
+          elif [ "${{ github.event_name }}" = "secret_scanning_alert" ]; then
+            ALERT_URL="$REPO_URL/security/secret-scanning/${{ github.event.alert.number }}"
+
+            if [ "${{ github.event.action }}" = "created" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "🔐 Security Alert: Secret Detected!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "🔑 Secret Type: ${{ github.event.alert.secret_type }}" >> $GITHUB_OUTPUT
+              echo "📁 Location: ${{ github.event.alert.secret }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "⚠️ Action Required: Review and revoke the exposed secret immediately!" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "${{ github.event.action }}" = "resolved" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "✅ Secret Alert Resolved!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "🔑 Secret Type: ${{ github.event.alert.secret_type }}" >> $GITHUB_OUTPUT
+              echo "👤 Resolved by: ${{ github.event.sender.login }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "${{ github.event.action }}" = "reopened" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "🔄 Secret Alert Reopened!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "🔑 Secret Type: ${{ github.event.alert.secret_type }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+            WORKFLOW_URL="$REPO_URL/actions/runs/${{ github.event.workflow_run.id }}"
+            WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+            CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+
+            if [ "$CONCLUSION" = "success" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "✅ CI/CD Success!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "📦 Workflow: $WORKFLOW_NAME" >> $GITHUB_OUTPUT
+              echo "👤 Triggered by: ${{ github.event.workflow_run.triggering_actor.login }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $WORKFLOW_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "$CONCLUSION" = "failure" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "❌ CI/CD Failed!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "📦 Workflow: $WORKFLOW_NAME" >> $GITHUB_OUTPUT
+              echo "👤 Triggered by: ${{ github.event.workflow_run.triggering_actor.login }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $WORKFLOW_URL" >> $GITHUB_OUTPUT
+              echo "⚠️ Action Required: Check the workflow logs for details" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "$CONCLUSION" = "cancelled" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "🚫 CI/CD Cancelled!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "📦 Workflow: $WORKFLOW_NAME" >> $GITHUB_OUTPUT
+              echo "👤 Triggered by: ${{ github.event.workflow_run.triggering_actor.login }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $WORKFLOW_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+
           else
-            echo "${{ github.event_name }}"
+            echo "msg=Event type not supported: ${{ github.event_name }}" >> $GITHUB_OUTPUT
           fi
+
+      - name: Send Signal Notification
+        if: steps.prep.outputs.msg != ''
+        env:
+          SIGNAL_API_URL: ${{ secrets.SIGNAL_API_URL }}
+          SIGNAL_BOT_NUMBER: ${{ secrets.SIGNAL_BOT_NUMBER }}
+          SIGNAL_RECIPIENTS: ${{ secrets.SIGNAL_RECIPIENTS }}
+        run: |
+          if [ -z "$SIGNAL_API_URL" ] || [ -z "$SIGNAL_BOT_NUMBER" ] || [ -z "$SIGNAL_RECIPIENTS" ]; then
+            echo "⚠️ Signal notification skipped: Required secrets not configured"
+            echo "Please configure the following GitHub secrets:"
+            echo "  - SIGNAL_API_URL: URL of your signal-cli-rest-api instance (e.g., http://your-server:8080/v2/send)"
+            echo "  - SIGNAL_BOT_NUMBER: Phone number of the Signal bot (e.g., +1234567890)"
+            echo "  - SIGNAL_RECIPIENTS: Comma-separated list of recipient phone numbers (e.g., +1234567890,+0987654321)"
+            exit 0
+          fi
+
+          # Prepare the message
+          MESSAGE="${{ steps.prep.outputs.msg }}"
+          
+          # Convert comma-separated recipients to JSON array
+          IFS=',' read -ra RECIPIENTS_ARRAY <<< "$SIGNAL_RECIPIENTS"
+          RECIPIENTS_JSON="["
+          for i in "${!RECIPIENTS_ARRAY[@]}"; do
+            if [ $i -gt 0 ]; then
+              RECIPIENTS_JSON+=","
+            fi
+            RECIPIENTS_JSON+="\"${RECIPIENTS_ARRAY[$i]}\""
+          done
+          RECIPIENTS_JSON+="]"
+
+          # Send notification via Signal API
+          HTTP_CODE=$(curl -s -o /tmp/response.txt -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"message\": $(echo "$MESSAGE" | jq -Rs .),
+              \"number\": \"$SIGNAL_BOT_NUMBER\",
+              \"recipients\": $RECIPIENTS_JSON
+            }" \
+            "$SIGNAL_API_URL")
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ Signal notification sent successfully (HTTP $HTTP_CODE)"
+          else
+            echo "❌ Failed to send Signal notification (HTTP $HTTP_CODE)"
+            cat /tmp/response.txt
+            exit 1
+          fi
+
