@@ -15,44 +15,12 @@ This repository includes automated Signal messenger notifications for:
 
 ## Setup Instructions
 
-### 1. Deploy Signal API Service
-
-To send Signal notifications, you need to deploy a `signal-cli-rest-api` service:
-
-```bash
-docker run \
-  --name signal-cli-rest-api \
-  --volume "<config_path>:/home/.local/share/signal-cli" \
-  --restart unless-stopped \
-  --publish 8080:8080 \
-  bbernhard/signal-cli-rest-api:latest
-```
-
-Replace `<config_path>` with a path on your host for persistent configuration.
-
-### 2. Register Signal Bot Number
-
-Follow the [signal-cli-rest-api documentation](https://github.com/bbernhard/signal-cli-rest-api/blob/master/doc/EXAMPLES.md) to register a phone number for your bot.
-
-### 3. Configure GitHub Secrets
-
-Add the following secrets to your GitHub repository (Settings → Secrets and variables → Actions):
-
-- **`SIGNAL_API_URL`**: URL of your signal-cli-rest-api instance
-  - Example: `http://your-server:8080/v2/send`
-  
-- **`SIGNAL_BOT_NUMBER`**: Phone number of the Signal bot (with country code)
-  - Example: `+1234567890`
-  
-- **`SIGNAL_RECIPIENTS`**: Comma-separated list of recipient phone numbers
-  - Example: `+1234567890,+0987654321`
-
-### 4. Enable CI/CD Health Monitoring (Optional)
+### 1. Enable CI/CD Health Monitoring (Optional)
 
 To receive notifications for workflow status:
 
 1. Edit `.github/workflows/signal-notifications.yml`
-2. Uncomment the `workflow_run` section (lines 12-15)
+2. Uncomment the `workflow_run` section
 3. Replace the example workflow names with your actual workflow names
 4. Commit and push the changes
 
@@ -65,7 +33,7 @@ workflow_run:
 
 Note: The `workflow_run` trigger only works on the default branch (main/master).
 
-### 5. Enable Security Alerts (Optional)
+### 2. Enable Security Alerts (Optional)
 
 To receive notifications for security issues:
 
@@ -115,17 +83,7 @@ To receive notifications for security issues:
 🔗 Link: https://github.com/...
 ```
 
-## Troubleshooting
-
-If notifications are not being sent:
-
-1. Check that all three GitHub secrets are configured correctly
-2. Verify your Signal API service is running and accessible
-3. Check the Actions tab for workflow run logs
-4. Ensure your Signal bot number is properly registered
-
 ## Resources
 
-- [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [GitHub Security Features](https://docs.github.com/en/code-security)
