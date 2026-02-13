@@ -70,6 +70,6 @@ jobs:
               text_mode: "styled"
             }')
 
-          curl -6 -X POST "${{ secrets.SIGNAL_API_URL }}/v1/send" \
+          curl -X POST "${{ secrets.SIGNAL_API_URL }}/v1/send" \
           -H "Content-Type: application/json" \
           -d "$JSON_BODY"
