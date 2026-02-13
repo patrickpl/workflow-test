@@ -10,6 +10,8 @@ jobs:
   signal-notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Check IPv6 connectivity
+        run: ping6 -c 3 google.com || echo "Kein IPv6 verfügbar"
       - name: Prepare Notification Data
         id: prep
         shell: bash
