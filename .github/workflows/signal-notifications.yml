@@ -5,6 +5,16 @@ on:
     branches: [ "main", "master" ]
   issues:
     types: [opened, edited, labeled, unlabeled, assigned, unassigned, milestoned, demilestoned, closed, reopened]
+  code_scanning_alert:
+    types: [created, reopened, fixed]
+  secret_scanning_alert:
+    types: [created, resolved, reopened]
+  # Uncomment and customize the workflow_run trigger below to monitor specific workflows
+  # Note: workflow_run only works on the default branch (main/master)
+  # Replace the workflow names with your actual workflow names
+  # workflow_run:
+  #   workflows: ["CI", "Tests", "Deploy"]  # List your workflow names here
+  #   types: [completed]
 
 jobs:
   signal-notify:
@@ -58,6 +68,97 @@ jobs:
               echo "🔗 Link: $ISSUE_URL" >> $GITHUB_OUTPUT
               echo "EOF" >> $GITHUB_OUTPUT
             fi
+
+          elif [ "${{ github.event_name }}" = "code_scanning_alert" ]; then
+            ALERT_URL="$REPO_URL/security/code-scanning/${{ github.event.alert.number }}"
+
+            if [ "${{ github.event.action }}" = "created" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "🚨 Security Alert: Code Scanning!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "⚠️ Severity: ${{ github.event.alert.rule.severity }}" >> $GITHUB_OUTPUT
+              echo "📝 Rule: ${{ github.event.alert.rule.description }}" >> $GITHUB_OUTPUT
+              echo "📁 File: ${{ github.event.alert.most_recent_instance.location.path }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "${{ github.event.action }}" = "reopened" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "🔄 Security Alert Reopened!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "⚠️ Severity: ${{ github.event.alert.rule.severity }}" >> $GITHUB_OUTPUT
+              echo "📝 Rule: ${{ github.event.alert.rule.description }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "${{ github.event.action }}" = "fixed" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "✅ Security Alert Fixed!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "📝 Rule: ${{ github.event.alert.rule.description }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+
+          elif [ "${{ github.event_name }}" = "secret_scanning_alert" ]; then
+            ALERT_URL="$REPO_URL/security/secret-scanning/${{ github.event.alert.number }}"
+
+            if [ "${{ github.event.action }}" = "created" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "🔐 Security Alert: Secret Detected!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "🔑 Secret Type: ${{ github.event.alert.secret_type_display_name }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "⚠️ Action Required: Review and revoke the exposed secret immediately!" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "${{ github.event.action }}" = "resolved" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "✅ Secret Alert Resolved!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "🔑 Secret Type: ${{ github.event.alert.secret_type_display_name }}" >> $GITHUB_OUTPUT
+              echo "👤 Resolved by: ${{ github.event.sender.login }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "${{ github.event.action }}" = "reopened" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "🔄 Secret Alert Reopened!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "🔑 Secret Type: ${{ github.event.alert.secret_type_display_name }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $ALERT_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+            WORKFLOW_URL="$REPO_URL/actions/runs/${{ github.event.workflow_run.id }}"
+            WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+            CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+
+            if [ "$CONCLUSION" = "success" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "✅ CI/CD Success!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "📦 Workflow: $WORKFLOW_NAME" >> $GITHUB_OUTPUT
+              echo "👤 Triggered by: ${{ github.event.workflow_run.triggering_actor.login }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $WORKFLOW_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "$CONCLUSION" = "failure" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "❌ CI/CD Failed!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "📦 Workflow: $WORKFLOW_NAME" >> $GITHUB_OUTPUT
+              echo "👤 Triggered by: ${{ github.event.workflow_run.triggering_actor.login }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $WORKFLOW_URL" >> $GITHUB_OUTPUT
+              echo "⚠️ Action Required: Check the workflow logs for details" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            elif [ "$CONCLUSION" = "cancelled" ]; then
+              echo "msg<<EOF" >> $GITHUB_OUTPUT
+              echo "🚫 CI/CD Cancelled!" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "📦 Workflow: $WORKFLOW_NAME" >> $GITHUB_OUTPUT
+              echo "👤 Triggered by: ${{ github.event.workflow_run.triggering_actor.login }}" >> $GITHUB_OUTPUT
+              echo "🔗 Link: $WORKFLOW_URL" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+
           else
-            echo "${{ github.event_name }}"
+            echo "Unsupported event type: ${{ github.event_name }}"
           fi
+
