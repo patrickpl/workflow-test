@@ -31,7 +31,7 @@ jobs:
           # Wir nutzen printf, um die URL-kodierten Zeilenumbrüche (%0A) korrekt zu interpretieren
           MESSAGE=$(printf "${{ steps.prep.outputs.msg }}")
           
-          curl -X POST "${{ secrets.SIGNAL_API_URL }}/v1/send" \
+          curl -6 -X POST "${{ secrets.SIGNAL_API_URL }}/v1/send" \
           -H "Content-Type: application/json" \
           -d "{
               \"message\": \"$MESSAGE\",
